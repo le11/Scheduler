@@ -5,6 +5,7 @@ import api from "../../services/api";
 import "./styles.css";
 // import "normalize.css";
 // import { render } from "@testing-library/react";
+import imgCalendar from "../../resources/calendar2.png";
 
 class Login extends Component {
   // componentDidMount() {
@@ -47,6 +48,7 @@ class Login extends Component {
   render() {
     return (
       <div id="login-page">
+        <img src={imgCalendar} alt="calendar" />
         <form onSubmit={this.handleSubmit}>
           <h1>Login</h1>
           {this.state.error && <p>{this.state.error}</p>}
@@ -72,7 +74,6 @@ class Login extends Component {
               />
             </div>
           </div>
-
           <button type="submit">Entrar</button>
         </form>
       </div>
