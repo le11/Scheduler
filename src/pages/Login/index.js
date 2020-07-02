@@ -1,16 +1,15 @@
 import React, { Component } from "react";
 import { withRouter } from "react-router-dom";
-import { login } from "../../services/auth";
+import { login, TOKEN_KEY } from "../../services/auth";
 import api from "../../services/api";
 import "./styles.css";
-// import "normalize.css";
-// import { render } from "@testing-library/react";
 import imgCalendar from "../../resources/calendar2.png";
 
 class Login extends Component {
+
   // componentDidMount() {
-  //     const logado = true;
-  //     if (logado === true) {
+  //     this.handleLogin();
+  //     if (this.state.logado) {
   //         this.props.history.push('/calendar');
   //     }
   //  }
@@ -19,7 +18,16 @@ class Login extends Component {
     user: "",
     pass: "",
     error: "",
+    logado: false
   };
+
+  handleLogin = async () => {
+    api
+      .get("/user/verify/" + localStorage.getItem(TOKEN_KEY))
+      .then((response) => {
+        this.setState({logado: true});
+      });
+  }
 
   handleSubmit = async (e) => {
     e.preventDefault();

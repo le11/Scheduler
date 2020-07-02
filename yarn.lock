@@ -1110,6 +1110,22 @@
   dependencies:
     tslib "^2.0.0"
 
+"@fullcalendar/common@~5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@fullcalendar/common/-/common-5.1.0.tgz#a45e01ebdcf00654f4d45f0457926cf2f5909820"
+  integrity sha512-ubwf9T0BDocGLh0AK8achrmc0siQdrp3Wn6Rmg/Ht4/WnwBtjc5gumzJ0ezG/xHE0GWG+Pz6Tm0IJF/jE7NJHw==
+  dependencies:
+    tslib "^2.0.0"
+
+"@fullcalendar/core@^5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@fullcalendar/core/-/core-5.1.0.tgz#0d9813b0564f24fe6285e31f8313d9366c6db411"
+  integrity sha512-C9OA9LHD1zgfcMABQ17TaxvAO/iubYFLDrgTIRCe77LatC0G36UBafthevUlMRqCR6rt5SBcw0oBt23HqSJO3A==
+  dependencies:
+    "@fullcalendar/common" "~5.1.0"
+    preact "^10.0.5"
+    tslib "^2.0.0"
+
 "@fullcalendar/daygrid@^5.0.1", "@fullcalendar/daygrid@~5.0.0":
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/@fullcalendar/daygrid/-/daygrid-5.0.1.tgz#dfa39737f9d9f7b9c247020a17e099e4a9c17a26"
@@ -7059,6 +7075,11 @@ mkdirp@^0.5.1, mkdirp@^0.5.3, mkdirp@~0.5.1:
   dependencies:
     minimist "^1.2.5"
 
+moment@^2.27.0:
+  version "2.27.0"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.27.0.tgz#8bff4e3e26a236220dfe3e36de756b6ebaa0105d"
+  integrity sha512-al0MUK7cpIcglMv3YF13qSgdAIqxHTO7brRtaz3DlSULbqfazqkc5kEjNrLDOM7fsjshoFIihnU8snrP7zUvhQ==
+
 move-concurrently@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/move-concurrently/-/move-concurrently-1.0.1.tgz#be2c005fda32e0b29af1f05d7c4b33214c701f92"
@@ -8547,6 +8568,11 @@ postcss@^7, postcss@^7.0.0, postcss@^7.0.1, postcss@^7.0.14, postcss@^7.0.16, po
     chalk "^2.4.2"
     source-map "^0.6.1"
     supports-color "^6.1.0"
+
+preact@^10.0.5:
+  version "10.4.5"
+  resolved "https://registry.yarnpkg.com/preact/-/preact-10.4.5.tgz#457fe034d558595864d0663574c2850f0b43d28e"
+  integrity sha512-/GyQOM44xNbM1nx1NWWdEO9RFjOVl3Ji6HTnEP+y9OkfyvJDHXnWJPQnuknrslzu5lZfAtFavS8gka91fbFAPg==
 
 prelude-ls@~1.1.2:
   version "1.1.2"

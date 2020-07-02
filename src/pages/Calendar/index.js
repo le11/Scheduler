@@ -1,66 +1,111 @@
 import React, { useState, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
+import ptLocale from "@fullcalendar/core/locales/pt-br";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import api from "../../services/api";
-import {
-  Modal,
-  Button,
-  Form,
-  Navbar,
-  Nav,
-  FormControl,
-  DropdownButton,
-  Dropdown,
-  ButtonGroup,
-} from "react-bootstrap";
+import { Modal, Button, Form } from "react-bootstrap";
 import "./styles.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import TimePicker from "react-bootstrap-time-picker";
-import { TOKEN_KEY } from "../../services/auth";
+import { TOKEN_KEY, logout } from "../../services/auth";
+import moment from "moment";
+import exitIcon from "../../resources/exit-icon.png";
+import { useHistory } from "react-router-dom";
 
 const Home = () => {
-  const [weekendsVisible, setWeekendsVisible] = useState(true);
   const [currentEvents, setCurrentEvents] = useState([]);
-  const [events, setEvents] = useState(2);
-  const [moreText, setMoreText] = useState("mais");
   const [modalShow, setModalShow] = useState(false);
-  const [start, setStart] = useState("");
+  const [start, setStart] = useState("28800");
   const [end, setEnd] = useState("");
   const [date, setDate] = useState(new Date());
-  const [room, setRoom] = useState("");
-  const [creationUser, setCreationUser] = useState("");
+  const [room, setRoom] = useState("0");
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("0");
   const [logon, setLogon] = useState("0");
   const [filterRoom, setFilterRoom] = useState("0");
   const [filterEvents, setFilterEvents] = useState("0");
+  const [error, setError] = useState(null);
+  const [logado, setLogado] = useState();
+
+  const locales = [ptLocale];
+  const history = useHistory();
 
   useEffect(() => {
-    api.get("/calendar/events").then((response) => {
-      setCurrentEvents(response.data);
-    });
-  }, []);
-
-  useEffect(() => {
-    api.get("/user/all").then((response) => {
-      const _users = response.data.map((user) => user.sAMAccountName);
-
-      setUsers(_users.sort());
-    });
-  }, []);
-
-  useEffect(() => {
-    api
+    const interval = setInterval(() => {
+      api
       .get("/user/verify/" + localStorage.getItem(TOKEN_KEY))
       .then((response) => {
-        setLogon(response.data.username);
+        if (response.statusText === "OK" && response.status >= 200) {
+          setLogon(response.data.username);
+          setLogado(true);
+        } else {
+          throw new Error("Sessão expirada!");
+        }
+      })
+      .catch((error) => {
+        history.push("/");// Token expired
       });
-  }, []);
+    }, 500)
+    return () => clearInterval(interval);
+  }, [history]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      async function getEvents() {
+        if (filterRoom === "0" && filterEvents === "0") {
+          const response = await api.get("/calendar/events");
+  
+          setCurrentEvents(response.data);
+        } else if (filterEvents === "0" && filterRoom !== "0") {
+          const params = {
+            room_id: filterRoom,
+          };
+          const response = await api.get("/calendar/events", { params });
+  
+          setCurrentEvents(response.data);
+        } else if (filterEvents !== "0" && filterRoom === "0") {
+          const params = {
+            user: logon,
+          };
+          const response = await api.get("/calendar/events", { params });
+  
+          setCurrentEvents(response.data);
+        } else {
+          const params = {
+            user: logon,
+            room_id: filterRoom,
+          };
+          const response = await api.get("/calendar/events", { params });
+          setCurrentEvents(response.data);
+        }
+      }
+      getEvents();
+    }, 2000)
+    return () => clearInterval(interval);
+  }, [filterEvents, filterRoom, logon]);
+
+  useEffect(() => {
+    if (logado) {
+      api.get("/user/all").then((response) => {
+        const _users = response.data.map((user) => user.sAMAccountName);
+
+        setUsers(_users.sort());
+      });
+    }
+  }, [logado]);
+
+  const resetValues = () => {
+    setSelectedUser(logon);
+    setRoom("0");
+    setStart("28800");
+    setEnd("");
+  };
 
   const handleModal = () => {
     modalShow === true ? setModalShow(false) : setModalShow(true);
+    resetValues();
   };
 
   const handleStartChange = (time) => {
@@ -68,7 +113,12 @@ const Home = () => {
   };
 
   const handleEndChange = (time) => {
-    time < start ? console.log("Erro!") : setEnd(time);
+    if (time < start) {
+      setError("Hora fim deve ser maior que início");
+    } else {
+      setEnd(time);
+      setError(null);
+    }
   };
 
   const handleEventClick = (clickInfo) => {
@@ -81,7 +131,54 @@ const Home = () => {
     setSelectedUser(user);
   };
 
-  const handleSubmit = async (e) => {};
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (end <= start) {
+      setError("Hora fim deve ser maior que início!");
+    } else if (room == "0") {
+      setError("Selecione uma sala!");
+    } else {
+      const schedule_date = date;
+      const schedule_user = selectedUser;
+      const start_time = (start / 60).toString();
+      const end_time = (end / 60).toString();
+      const all_day = "0";
+      const creation_user = logon;
+      const creation_date = moment(date).format("yyyy-MM-DD");
+      const room_id = room;
+
+      const data = {
+        schedule_date,
+        schedule_user,
+        start_time,
+        end_time,
+        all_day,
+        creation_user,
+        creation_date,
+        room_id,
+      };
+
+      const response = await api.post("/calendar/event", data);
+      if (response.status == 201) {
+        setModalShow(false);
+        alert("Sala agendada com sucesso!");
+      } else {
+        setModalShow(false);
+        alert("Ocorreu um erro!");
+      }
+      // window.location.reload();
+    }
+  };
+
+  const handleDateSelect = (selectInfo) => {
+    setDate(selectInfo.startStr);
+    handleModal();
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
 
   const renderSidebar = () => {
     return (
@@ -89,13 +186,9 @@ const Home = () => {
         <p id="login-user">
           Olá, <strong>{logon}</strong>
         </p>
-        <div id="nav-links">
-          <button onClick={handleModal}>AGENDAR</button>
-          <button>CANCELAR</button>
-        </div>
         <div className="nav-buttons">
           <p>Salas de reunião</p>
-          <Form.Group controlId="formBasicRoom">
+          <Form.Group>
             <Form.Control
               as="select"
               onChange={(e) => setFilterRoom(e.target.value)}
@@ -112,7 +205,7 @@ const Home = () => {
             </Form.Control>
           </Form.Group>
           <p>Solicitante</p>
-          <Form.Group controlId="formBasicRoom">
+          <Form.Group>
             <Form.Control
               as="select"
               onChange={(e) => setFilterEvents(e.target.value)}
@@ -125,6 +218,10 @@ const Home = () => {
             </Form.Control>
           </Form.Group>
         </div>
+        <div id="logout">
+          <img src={exitIcon} alt="logout" id="exit-icon" />
+          <button onClick={handleLogout}>Sair</button>
+        </div>
       </div>
     );
   };
@@ -132,9 +229,14 @@ const Home = () => {
   const renderModal = () => {
     return (
       <>
-        <Modal show={modalShow}>
+        <Modal
+          show={modalShow}
+          onHide={handleModal}
+          backdrop="static"
+          keyboard={false}
+        >
           <Modal.Header>
-            <Modal.Title>Novo</Modal.Title>
+            <Modal.Title>Novo agendamento</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <Form>
@@ -145,7 +247,7 @@ const Home = () => {
                   value={selectedUser}
                   onChange={handleSelectedUser}
                 >
-                  <option value="0">{logon}</option>
+                  <option value={logon}>{logon}</option>
                   {users.map((item, i) => (
                     <option key={i} value={item}>
                       {item}
@@ -175,7 +277,7 @@ const Home = () => {
                   value={date}
                 />
               </Form.Group>
-              <Form.Group controlId="formBasicTime">
+              <Form.Group controlId="formBasicTime1">
                 <Form.Label>Início</Form.Label>
                 <TimePicker
                   format={24}
@@ -186,7 +288,7 @@ const Home = () => {
                   value={start}
                 />
               </Form.Group>
-              <Form.Group controlId="formBasicTime">
+              <Form.Group controlId="formBasicTime2">
                 <Form.Label>Fim</Form.Label>
                 <TimePicker
                   format={24}
@@ -198,13 +300,14 @@ const Home = () => {
                 />
               </Form.Group>
             </Form>
+            {error && <p id="error">{error}</p>}
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleModal}>
-              Close
+              Fechar
             </Button>
             <Button variant="primary" type="submit" onClick={handleSubmit}>
-              Save Changes
+              Criar
             </Button>
           </Modal.Footer>
         </Modal>
@@ -215,64 +318,30 @@ const Home = () => {
   const renderSubtitle = () => {
     return (
       <div className="sub">
-        <svg 
-        height="100" 
-        width="100">
-          <circle
-            cx="50"
-            cy="50"
-            r="8"
-            fill="#d61a1a "
-          />
+        <svg height="100" width="100">
+          <circle cx="50" cy="50" r="8" fill="#d61a1a " />
         </svg>
         <p>SALA 1 - Recepção</p>
-        <svg 
-        height="100" 
-        width="100">
-          <circle
-            cx="50"
-            cy="50"
-            r="8"
-            fill="#d7ed2d "
-          />
+        <svg height="100" width="100">
+          <circle cx="50" cy="50" r="8" fill="#d7ed2d " />
         </svg>
         <p>SALA 2 - Recepção</p>
-        <svg 
-        height="100" 
-        width="100">
-          <circle
-            cx="50"
-            cy="50"
-            r="8"
-            fill="#08cc08 "
-          />
+        <svg height="100" width="100">
+          <circle cx="50" cy="50" r="8" fill="#08cc08 " />
         </svg>
         <p>SALA 3 - TV</p>
-        <svg 
-        height="100" 
-        width="100">
-          <circle
-            cx="50"
-            cy="50"
-            r="8"
-            fill="#E2A9F3 "
-          />
+        <svg height="100" width="100">
+          <circle cx="50" cy="50" r="8" fill="#E2A9F3 " />
         </svg>
         <p>SALA 1 - DataShow</p>
-        <svg 
-        height="100" 
-        width="100">
-          <circle
-            cx="50"
-            cy="50"
-            r="8"
-            fill="#17e6d4 "
-          />
+        <svg height="100" width="100">
+          <circle cx="50" cy="50" r="8" fill="#17e6d4 " />
         </svg>
         <p>SALA Plotter</p>
       </div>
     );
   };
+
   return (
     <div className="calendario">
       {renderSidebar()}
@@ -285,16 +354,16 @@ const Home = () => {
             center: "title",
             right: "dayGridMonth,timeGridWeek,timeGridDay",
           }}
-          locale="pt-br"
+          locales={locales}
           initialView="dayGridMonth"
           selectMirror={true}
           selectable={true}
           editable={true}
-          weekends={weekendsVisible}
-          // select={this.handleDateSelect}
+          weekends={true}
+          select={handleDateSelect}
           events={currentEvents}
-          dayMaxEvents={events}
-          moreLinkText={moreText}
+          dayMaxEvents={2}
+          moreLinkText="mais"
           eventClick={handleEventClick}
           aspectRatio="1.4"
           // eventsSet={this.handleEvents} // called after events are initialized/added/changed/removed
