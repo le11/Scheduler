@@ -47,12 +47,12 @@ const Home = () => {
       .catch((error) => {
         history.push("/");// Token expired
       });
-    }, 500)
+    }, 1000)
     return () => clearInterval(interval);
   }, [history]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+
       async function getEvents() {
         if (filterRoom === "0" && filterEvents === "0") {
           const response = await api.get("/calendar/events");
@@ -82,8 +82,7 @@ const Home = () => {
         }
       }
       getEvents();
-    }, 2000)
-    return () => clearInterval(interval);
+
   }, [filterEvents, filterRoom, logon]);
 
   useEffect(() => {
@@ -131,12 +130,10 @@ const Home = () => {
     setSelectedUser(user);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (end <= start) {
       setError("Hora fim deve ser maior que início!");
-    } else if (room == "0") {
+    } else if (room === "0") {
       setError("Selecione uma sala!");
     } else {
       const schedule_date = date;
@@ -160,16 +157,18 @@ const Home = () => {
       };
 
       const response = await api.post("/calendar/event", data);
-      if (response.status == 201) {
+      if (response.status === 201) {
         setModalShow(false);
         alert("Sala agendada com sucesso!");
       } else {
         setModalShow(false);
         alert("Ocorreu um erro!");
       }
-      // window.location.reload();
+      window.location.reload();
     }
   };
+  
+
 
   const handleDateSelect = (selectInfo) => {
     setDate(selectInfo.startStr);
@@ -366,12 +365,6 @@ const Home = () => {
           moreLinkText="mais"
           eventClick={handleEventClick}
           aspectRatio="1.4"
-          // eventsSet={this.handleEvents} // called after events are initialized/added/changed/removed
-          /* you can update a remote database when these fire:
-              eventAdd={function(){}}
-              eventChange={function(){}}
-              eventRemove={function(){}}
-              */
         />
       </div>
       {renderSubtitle()}
