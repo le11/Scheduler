@@ -1,3 +1,5 @@
+/* eslint-disable no-unreachable */
+/* eslint-disable default-case */
 import React, { useState, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import ptLocale from "@fullcalendar/core/locales/pt-br";
@@ -13,6 +15,7 @@ import { TOKEN_KEY, logout } from "../../services/auth";
 import moment from "moment";
 import exitIcon from "../../resources/exit-icon.png";
 import { useHistory } from "react-router-dom";
+import { format, getHours, getMinutes } from "date-fns";
 
 const Home = () => {
   const [currentEvents, setCurrentEvents] = useState([]);
@@ -28,6 +31,16 @@ const Home = () => {
   const [filterEvents, setFilterEvents] = useState("0");
   const [error, setError] = useState(null);
   const [logado, setLogado] = useState();
+  // variables that will show when the user clicks in an event
+  const [eventId, setEventId] = useState(null);
+  const [titleView, setTitleView] = useState("0");
+  const [dateView, setDateView] = useState(new Date());
+  const [startView, setStartView] = useState("");
+  const [endView, setEndView] = useState("");
+  const [roomView, setRoomView] = useState("0");
+  const [userCreatedView, setUserCreatedView] = useState("");
+  const [modalInfoShow, setModalInfoShow] = useState(false);
+  const [removeButton, setRemoveButton] = useState(true);
 
   const locales = [ptLocale];
   const history = useHistory();
@@ -35,54 +48,52 @@ const Home = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       api
-      .get("/user/verify/" + localStorage.getItem(TOKEN_KEY))
-      .then((response) => {
-        if (response.statusText === "OK" && response.status >= 200) {
-          setLogon(response.data.username);
-          setLogado(true);
-        } else {
-          throw new Error("Sessão expirada!");
-        }
-      })
-      .catch((error) => {
-        history.push("/");// Token expired
-      });
-    }, 1000)
+        .get("/user/verify/" + localStorage.getItem(TOKEN_KEY))
+        .then((response) => {
+          if (response.statusText === "OK" && response.status >= 200) {
+            setLogon(response.data.username);
+            setLogado(true);
+          } else {
+            throw new Error("Sessão expirada!");
+          }
+        })
+        .catch((error) => {
+          history.push("/"); // Token expired
+        });
+    }, 1000);
     return () => clearInterval(interval);
   }, [history]);
 
   useEffect(() => {
+    async function getEvents() {
+      if (filterRoom === "0" && filterEvents === "0") {
+        const response = await api.get("/calendar/events");
 
-      async function getEvents() {
-        if (filterRoom === "0" && filterEvents === "0") {
-          const response = await api.get("/calendar/events");
-  
-          setCurrentEvents(response.data);
-        } else if (filterEvents === "0" && filterRoom !== "0") {
-          const params = {
-            room_id: filterRoom,
-          };
-          const response = await api.get("/calendar/events", { params });
-  
-          setCurrentEvents(response.data);
-        } else if (filterEvents !== "0" && filterRoom === "0") {
-          const params = {
-            user: logon,
-          };
-          const response = await api.get("/calendar/events", { params });
-  
-          setCurrentEvents(response.data);
-        } else {
-          const params = {
-            user: logon,
-            room_id: filterRoom,
-          };
-          const response = await api.get("/calendar/events", { params });
-          setCurrentEvents(response.data);
-        }
+        setCurrentEvents(response.data);
+      } else if (filterEvents === "0" && filterRoom !== "0") {
+        const params = {
+          room_id: filterRoom,
+        };
+        const response = await api.get("/calendar/events", { params });
+
+        setCurrentEvents(response.data);
+      } else if (filterEvents !== "0" && filterRoom === "0") {
+        const params = {
+          user: logon,
+        };
+        const response = await api.get("/calendar/events", { params });
+
+        setCurrentEvents(response.data);
+      } else {
+        const params = {
+          user: logon,
+          room_id: filterRoom,
+        };
+        const response = await api.get("/calendar/events", { params });
+        setCurrentEvents(response.data);
       }
-      getEvents();
-
+    }
+    getEvents();
   }, [filterEvents, filterRoom, logon]);
 
   useEffect(() => {
@@ -95,6 +106,10 @@ const Home = () => {
     }
   }, [logado]);
 
+  useEffect(() => {
+
+  })
+
   const resetValues = () => {
     setSelectedUser(logon);
     setRoom("0");
@@ -105,6 +120,15 @@ const Home = () => {
   const handleModal = () => {
     modalShow === true ? setModalShow(false) : setModalShow(true);
     resetValues();
+  };
+
+  const handleModalInfo = () => {
+    if (modalInfoShow === true) {
+      setModalInfoShow(false);
+      setRemoveButton(false);
+    } else {
+      setModalInfoShow(true);
+    }
   };
 
   const handleStartChange = (time) => {
@@ -120,8 +144,74 @@ const Home = () => {
     }
   };
 
+  const setRoomName = (id) => {
+    switch (id) {
+      case 1:
+        return "SALA 1 - DataShow";
+
+      case 2:
+        return "SALA 2 - Recepção";
+
+      case 3:
+        return "SALA 3 - TV";
+
+      case 4:
+        return "SALA 1 - Recepção";
+
+      case 5:
+        return "SALA Plotter";
+    }
+  };
+
+  const checkPermissionRemove = (creator, title) => {
+    if(logon == creator || logon == title){
+      return false
+    }
+    else{
+      return true
+    }    
+  };
+
   const handleEventClick = (clickInfo) => {
-    alert(clickInfo.event.id);
+    setRemoveButton(true);
+
+    
+    api.get("/calendar/event/" + clickInfo.event.id).then((response) => {
+      const creationUser = response.data.map((user) => user.creation_user);
+
+      setUserCreatedView(creationUser[0]);
+    });
+
+    setRemoveButton(checkPermissionRemove(userCreatedView, clickInfo.event.title))
+    
+    // getting event data to show
+    setEventId(clickInfo.event.id);
+    let date = clickInfo.event.start;
+    let start = clickInfo.event.start;
+    let end = clickInfo.event.end;
+    let title = clickInfo.event.title;
+    let roomId = parseInt(clickInfo.event.groupId);
+    let startHour = getHours(start);
+    let startMinutes = getMinutes(start).toString();
+    let endHour = getHours(end);
+    let endMinutes = getMinutes(end).toString();
+
+    if (startMinutes.length < 2) {
+      startMinutes += "0";
+    }
+
+    if (endMinutes.length < 2) {
+      endMinutes += "0";
+    }
+
+    setTitleView(title);
+    setRoomView(setRoomName(roomId));
+    setDateView(format(date, "dd/MM/yyyy"));
+    setStartView(startHour + ":" + startMinutes);
+    setEndView(endHour + ":" + endMinutes);
+
+    // test to define delete authorization
+    setTimeout(setModalInfoShow(true), 5000);
   };
 
   const handleSelectedUser = (e) => {
@@ -167,8 +257,6 @@ const Home = () => {
       window.location.reload();
     }
   };
-  
-
 
   const handleDateSelect = (selectInfo) => {
     setDate(selectInfo.startStr);
@@ -177,6 +265,23 @@ const Home = () => {
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleDelete = () => {
+    api
+      .delete("/calendar/events/" + eventId)
+      .then((response) => {
+        if (response.status == 200) {
+          setModalInfoShow(false);
+        } else {
+          throw new Error("Erro");
+        }
+      })
+      .catch((error) => {
+        alert("Ocorreu um erro!");
+        setModalInfoShow(false);
+      });
+    window.location.reload();
   };
 
   const renderSidebar = () => {
@@ -341,9 +446,58 @@ const Home = () => {
     );
   };
 
+  const renderEventInfo = () => {
+    return (
+      <>
+        <Modal
+          show={modalInfoShow}
+          onHide={handleModalInfo}
+          backdrop="static"
+          keyboard={false}
+        >
+          <Modal.Header>
+            <Modal.Title>Informações</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p className="titleView">Id:</p>
+            <p className="infoView">{eventId}</p>
+            <p className="titleView">Nome:</p>
+            <p className="infoView">{titleView}</p>
+            <p className="titleView">Sala:</p>
+            <p className="infoView">{roomView}</p>
+            <p className="titleView">Data:</p>
+            <p className="infoView">{dateView}</p>
+            <p className="titleView">Início:</p>
+            <p className="infoView">{startView}</p>
+            <p className="titleView">Fim:</p>
+            <p className="infoView">{endView}</p>
+            <p className="titleView">Agendado por:</p>
+            <p className="infoViewUser">{userCreatedView}</p>
+            <br />
+
+            <Button
+              id="remove-button"
+              variant="danger"
+              onClick={handleDelete}
+              disabled={removeButton}
+            >
+              Remover
+            </Button>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleModalInfo}>
+              Fechar
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </>
+    );
+  };
+
   return (
     <div className="calendario">
       {renderSidebar()}
+      {renderEventInfo()}
       {renderModal()}
       <div className="main">
         <FullCalendar
