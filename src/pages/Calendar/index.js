@@ -45,7 +45,6 @@ const Home = () => {
   const locales = [ptLocale];
   const history = useHistory();
 
-
   useEffect(() => {
     const interval = setInterval(() => {
       api
@@ -108,15 +107,13 @@ const Home = () => {
   }, [logado]);
 
   useEffect(() => {
-    if(logon == userCreatedView || logon == titleView){
-      setRemoveButton(false)
+    if (logon == userCreatedView || logon == titleView) {
+      setRemoveButton(false);
+    } else {
+      setRemoveButton(true);
     }
-    else{
-      setRemoveButton(true)
-    }    
-  }, [logon, titleView, userCreatedView])
+  }, [logon, titleView, userCreatedView]);
 
- 
   const resetValues = () => {
     setSelectedUser(logon);
     setRoom("0");
@@ -170,16 +167,14 @@ const Home = () => {
   };
 
   const handleEventClick = (clickInfo) => {
-
-    const result =
-     currentEvents.filter(function(obj) {
-        return obj.id == clickInfo.event.id
+    const result = currentEvents.filter(function (obj) {
+      return obj.id == clickInfo.event.id;
     });
 
     const userTest = result[0].creation_user;
     setEventId(clickInfo.event.id);
     // getting event data to show
-    
+
     let date = clickInfo.event.start;
     let start = clickInfo.event.start;
     let end = clickInfo.event.end;
@@ -485,7 +480,7 @@ const Home = () => {
         </Modal>
       </>
     );
-  }
+  };
 
   return (
     <div className="calendario">
