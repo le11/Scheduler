@@ -45,6 +45,7 @@ const Home = () => {
   const locales = [ptLocale];
   const history = useHistory();
 
+
   useEffect(() => {
     const interval = setInterval(() => {
       api
@@ -107,9 +108,15 @@ const Home = () => {
   }, [logado]);
 
   useEffect(() => {
+    if(logon == userCreatedView || logon == titleView){
+      setRemoveButton(false)
+    }
+    else{
+      setRemoveButton(true)
+    }    
+  }, [logon, titleView, userCreatedView])
 
-  })
-
+ 
   const resetValues = () => {
     setSelectedUser(logon);
     setRoom("0");
@@ -125,7 +132,6 @@ const Home = () => {
   const handleModalInfo = () => {
     if (modalInfoShow === true) {
       setModalInfoShow(false);
-      setRemoveButton(false);
     } else {
       setModalInfoShow(true);
     }
@@ -163,29 +169,17 @@ const Home = () => {
     }
   };
 
-  const checkPermissionRemove = (creator, title) => {
-    if(logon == creator || logon == title){
-      return false
-    }
-    else{
-      return true
-    }    
-  };
-
   const handleEventClick = (clickInfo) => {
-    setRemoveButton(true);
 
-    
-    api.get("/calendar/event/" + clickInfo.event.id).then((response) => {
-      const creationUser = response.data.map((user) => user.creation_user);
-
-      setUserCreatedView(creationUser[0]);
+    const result =
+     currentEvents.filter(function(obj) {
+        return obj.id == clickInfo.event.id
     });
 
-    setRemoveButton(checkPermissionRemove(userCreatedView, clickInfo.event.title))
-    
-    // getting event data to show
+    const userTest = result[0].creation_user;
     setEventId(clickInfo.event.id);
+    // getting event data to show
+    
     let date = clickInfo.event.start;
     let start = clickInfo.event.start;
     let end = clickInfo.event.end;
@@ -209,9 +203,8 @@ const Home = () => {
     setDateView(format(date, "dd/MM/yyyy"));
     setStartView(startHour + ":" + startMinutes);
     setEndView(endHour + ":" + endMinutes);
-
-    // test to define delete authorization
-    setTimeout(setModalInfoShow(true), 5000);
+    setUserCreatedView(userTest);
+    setModalInfoShow(true);
   };
 
   const handleSelectedUser = (e) => {
@@ -492,12 +485,11 @@ const Home = () => {
         </Modal>
       </>
     );
-  };
+  }
 
   return (
     <div className="calendario">
       {renderSidebar()}
-      {renderEventInfo()}
       {renderModal()}
       <div className="main">
         <FullCalendar
@@ -522,6 +514,7 @@ const Home = () => {
         />
       </div>
       {renderSubtitle()}
+      {renderEventInfo()}
     </div>
   );
 };
