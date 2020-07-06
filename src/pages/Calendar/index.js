@@ -31,6 +31,7 @@ const Home = () => {
   const [filterEvents, setFilterEvents] = useState("0");
   const [error, setError] = useState(null);
   const [logado, setLogado] = useState();
+  const [weekendsVisible, setWeekendsVisible] = useState(true);
   // variables that will show when the user clicks in an event
   const [eventId, setEventId] = useState(null);
   const [titleView, setTitleView] = useState("0");
@@ -272,6 +273,10 @@ const Home = () => {
     window.location.reload();
   };
 
+  const handleWeekends = () => {
+    setWeekendsVisible(!weekendsVisible);
+  }
+
   const renderSidebar = () => {
     return (
       <div className="sidebar">
@@ -314,6 +319,12 @@ const Home = () => {
           <img src={exitIcon} alt="logout" id="exit-icon" />
           <button onClick={handleLogout}>Sair</button>
         </div>
+        <div className="toggleWeekend">
+          <Form.Check 
+          label="Esconder fim de semana"
+          onChange={handleWeekends} 
+          />
+         </div>
       </div>
     );
   };
@@ -499,7 +510,7 @@ const Home = () => {
           selectMirror={true}
           selectable={true}
           editable={true}
-          weekends={true}
+          weekends={weekendsVisible}
           select={handleDateSelect}
           events={currentEvents}
           dayMaxEvents={2}

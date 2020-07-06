@@ -30,3 +30,7 @@ body {
 body, input, button {
   font-family: Roboto, Arial, Helvetica, sans-serif;
 }
+
+html, body, #app, #app>div {
+  height: 100%
+}
