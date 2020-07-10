@@ -239,11 +239,12 @@ const Home = () => {
       if (response.status === 201) {
         setModalShow(false);
         alert("Sala agendada com sucesso!");
+        window.location.reload();
       } else {
         setModalShow(false);
         alert("Ocorreu um erro!");
       }
-      window.location.reload();
+      
     }
   };
 
